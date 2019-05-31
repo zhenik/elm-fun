@@ -4321,17 +4321,15 @@ function _Browser_load(url)
 	}));
 }
 var author$project$Guess$Model = F4(
-	function (word, guess, isCorrect, revealedWord) {
-		return {guess: guess, isCorrect: isCorrect, revealedWord: revealedWord, word: word};
+	function (word, guess, revealedWord, result) {
+		return {guess: guess, result: result, revealedWord: revealedWord, word: word};
 	});
-var elm$core$Basics$False = {$: 'False'};
 var author$project$Guess$initModel = A4(
 	author$project$Guess$Model,
 	'Saturday',
 	'',
-	false,
-	{pos: 2, text: ''});
-var elm$core$Basics$True = {$: 'True'};
+	{pos: 2, text: ''},
+	'');
 var elm$core$Elm$JsArray$foldr = _JsArray_foldr;
 var elm$core$Array$foldr = F3(
 	function (func, baseCase, _n0) {
@@ -4413,10 +4411,11 @@ var elm$core$Set$toList = function (_n0) {
 	return elm$core$Dict$keys(dict);
 };
 var elm$core$Basics$eq = _Utils_equal;
-var author$project$Guess$checkIfCorrect = F2(
-	function (model, txt) {
-		return _Utils_eq(txt, model.word) ? true : false;
-	});
+var author$project$Guess$checkResult = function (_n0) {
+	var word = _n0.word;
+	var guess = _n0.guess;
+	return _Utils_eq(word, guess) ? 'You got it' : 'No';
+};
 var elm$core$Basics$add = _Basics_add;
 var elm$core$Maybe$Just = function (a) {
 	return {$: 'Just', a: a};
@@ -4435,29 +4434,37 @@ var author$project$Guess$revealAndIncrement = function (_n0) {
 };
 var author$project$Guess$update = F2(
 	function (msg, model) {
-		if (msg.$ === 'Answer') {
-			var txt = msg.a;
-			return _Utils_update(
-				model,
-				{
-					guess: txt,
-					isCorrect: A2(author$project$Guess$checkIfCorrect, model, txt)
-				});
-		} else {
-			return _Utils_update(
-				model,
-				{
-					revealedWord: author$project$Guess$revealAndIncrement(model)
-				});
+		switch (msg.$) {
+			case 'Answer':
+				var txt = msg.a;
+				return _Utils_update(
+					model,
+					{guess: txt});
+			case 'Reveal':
+				return _Utils_update(
+					model,
+					{
+						revealedWord: author$project$Guess$revealAndIncrement(model)
+					});
+			default:
+				return _Utils_update(
+					model,
+					{
+						result: author$project$Guess$checkResult(model)
+					});
 		}
 	});
 var author$project$Guess$Answer = function (a) {
 	return {$: 'Answer', a: a};
 };
+var author$project$Guess$Check = {$: 'Check'};
 var author$project$Guess$Reveal = {$: 'Reveal'};
+var elm$core$Basics$append = _Utils_append;
 var elm$core$Basics$identity = function (x) {
 	return x;
 };
+var elm$core$Basics$False = {$: 'False'};
+var elm$core$Basics$True = {$: 'True'};
 var elm$core$Result$isOk = function (result) {
 	if (result.$ === 'Ok') {
 		return true;
@@ -4656,7 +4663,6 @@ var elm$json$Json$Decode$OneOf = function (a) {
 	return {$: 'OneOf', a: a};
 };
 var elm$core$Basics$and = _Basics_and;
-var elm$core$Basics$append = _Utils_append;
 var elm$core$Basics$or = _Basics_or;
 var elm$core$Char$toCode = _Char_toCode;
 var elm$core$Char$isLower = function (_char) {
@@ -4860,19 +4866,12 @@ var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 			return 3;
 	}
 };
-var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
-var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
-var author$project$Guess$generateResult = function (_n0) {
-	var isCorrect = _n0.isCorrect;
-	var revealedWord = _n0.revealedWord;
-	var word = _n0.word;
-	var txt = _Utils_eq(revealedWord.text, word) ? 'You did not guess it' : (isCorrect ? 'You got it' : 'No');
-	return elm$html$Html$text(txt);
-};
 var elm$html$Html$button = _VirtualDom_node('button');
 var elm$html$Html$div = _VirtualDom_node('div');
 var elm$html$Html$h2 = _VirtualDom_node('h2');
 var elm$html$Html$input = _VirtualDom_node('input');
+var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
 var elm$json$Json$Encode$string = _Json_wrap;
 var elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
@@ -5019,11 +5018,21 @@ var author$project$Guess$view = function (model) {
 						elm$html$Html$text('Give me a hint')
 					])),
 				A2(
+				elm$html$Html$button,
+				_List_fromArray(
+					[
+						elm$html$Html$Events$onClick(author$project$Guess$Check)
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text('Submit answer')
+					])),
+				A2(
 				elm$html$Html$div,
 				_List_Nil,
 				_List_fromArray(
 					[
-						author$project$Guess$generateResult(model)
+						elm$html$Html$text(model.result)
 					]))
 			]));
 };
