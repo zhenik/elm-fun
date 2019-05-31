@@ -11,23 +11,38 @@ main =
     Browser.sandbox { init = initModel, update = update, view = view }
 
 
+type alias RevealedWord =
+    { pos : Int, text : String }
+
+
+type alias Result =
+    { text : String, isCorrect : Bool }
+
+
 type alias Model =
     { word : String
     , guess : String
-    , revealedWord : { pos : Int, text : String }
-    , result : String
+    , revealedWord : RevealedWord
+    , result : Result
+    , wordList : List String
     }
+
+
+initWordList : List String
+initWordList =
+    [ "Monday", "Tuesday", "Wednesday", "Saturday", "Friday" ]
 
 
 initModel : Model
 initModel =
-    Model "Saturday" "" { pos = 2, text = "" } ""
+    Model "Saturday" "" { pos = 2, text = "" } { text = "", isCorrect = False } initWordList
 
 
 type Msg
     = Answer String
     | Reveal
     | Check
+    | Another
 
 
 update : Msg -> Model -> Model
@@ -42,17 +57,37 @@ update msg model =
         Check ->
             { model | result = checkResult model }
 
+        Another ->
+            let
+                newWord =
+                    getNewWord model
+            in
+            { model
+                | word = newWord
+                , guess = ""
+                , revealedWord = { pos = 2, text = String.slice 0 1 newWord }
+                , wordList = List.drop 1 model.wordList
+            }
 
-checkResult : Model -> String
-checkResult { word, guess } =
-    if word == guess then
-        "You got it"
+
+getNewWord : Model -> String
+getNewWord { wordList, word } =
+    wordList
+        |> List.filter (\w -> w /= word)
+        |> List.take 1
+        |> String.concat
+
+
+checkResult : Model -> Result
+checkResult { word, guess, result } =
+    if String.toLower word == String.toLower guess then
+        { result | text = "You got it", isCorrect = True }
 
     else
-        "No"
+        { result | text = "No", isCorrect = False }
 
 
-revealAndIncrement : Model -> { pos : Int, text : String }
+revealAndIncrement : Model -> RevealedWord
 revealAndIncrement { revealedWord, word } =
     if revealedWord.text == word then
         revealedWord
@@ -63,24 +98,38 @@ revealAndIncrement { revealedWord, word } =
 
 genResult : Model -> Html Msg
 genResult { result } =
-    if String.length result < 1 then
+    if String.isEmpty result.text then
         div [] []
 
-    else if result == "No" then
-        div [ style "fontColor" "red" ] [ text result ]
-
     else
-        div [ style "color" "green" ] [ text result ]
+        let
+            color =
+                if result.isCorrect then
+                    "green"
+
+                else
+                    "red"
+        in
+        div [ style "color" color ] [ text result.text ]
 
 
 view : Model -> Html Msg
 view model =
-    div []
+    div
+        [ style "textAlign" "center"
+        , style "fontSize" "2em"
+        , style "fontFamily" "monospace"
+        ]
         [ h2 [] [ text ("I am thinking of a word that starts with " ++ model.revealedWord.text) ]
         , input [ placeholder "Type your guesss", onInput Answer ] []
-        , button [ onClick Reveal ] [ text "Give me a hint" ]
-        , button [ onClick Check ] [ text "Submit answer" ]
-        , div [] [ text model.result ]
+        , p []
+            [ button [ onClick Reveal ] [ text "Give me a hint" ]
+            , button [ onClick Check ] [ text "Submit answer" ]
+            , button [ onClick Another ] [ text "Another word" ]
+            ]
+        , div []
+            [ text model.result.text
+            ]
 
         -- , div [] [ text (toString model) ]
         ]
