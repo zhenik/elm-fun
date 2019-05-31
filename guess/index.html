@@ -863,53 +863,6 @@ var _Basics_xor = F2(function(a, b) { return a !== b; });
 
 
 
-function _Char_toCode(char)
-{
-	var code = char.charCodeAt(0);
-	if (0xD800 <= code && code <= 0xDBFF)
-	{
-		return (code - 0xD800) * 0x400 + char.charCodeAt(1) - 0xDC00 + 0x10000
-	}
-	return code;
-}
-
-function _Char_fromCode(code)
-{
-	return _Utils_chr(
-		(code < 0 || 0x10FFFF < code)
-			? '\uFFFD'
-			:
-		(code <= 0xFFFF)
-			? String.fromCharCode(code)
-			:
-		(code -= 0x10000,
-			String.fromCharCode(Math.floor(code / 0x400) + 0xD800, code % 0x400 + 0xDC00)
-		)
-	);
-}
-
-function _Char_toUpper(char)
-{
-	return _Utils_chr(char.toUpperCase());
-}
-
-function _Char_toLower(char)
-{
-	return _Utils_chr(char.toLowerCase());
-}
-
-function _Char_toLocaleUpper(char)
-{
-	return _Utils_chr(char.toLocaleUpperCase());
-}
-
-function _Char_toLocaleLower(char)
-{
-	return _Utils_chr(char.toLocaleLowerCase());
-}
-
-
-
 var _String_cons = F2(function(chr, str)
 {
 	return chr + str;
@@ -1219,6 +1172,53 @@ function _String_fromList(chars)
 	return _List_toArray(chars).join('');
 }
 
+
+
+
+function _Char_toCode(char)
+{
+	var code = char.charCodeAt(0);
+	if (0xD800 <= code && code <= 0xDBFF)
+	{
+		return (code - 0xD800) * 0x400 + char.charCodeAt(1) - 0xDC00 + 0x10000
+	}
+	return code;
+}
+
+function _Char_fromCode(code)
+{
+	return _Utils_chr(
+		(code < 0 || 0x10FFFF < code)
+			? '\uFFFD'
+			:
+		(code <= 0xFFFF)
+			? String.fromCharCode(code)
+			:
+		(code -= 0x10000,
+			String.fromCharCode(Math.floor(code / 0x400) + 0xD800, code % 0x400 + 0xDC00)
+		)
+	);
+}
+
+function _Char_toUpper(char)
+{
+	return _Utils_chr(char.toUpperCase());
+}
+
+function _Char_toLower(char)
+{
+	return _Utils_chr(char.toLowerCase());
+}
+
+function _Char_toLocaleUpper(char)
+{
+	return _Utils_chr(char.toLocaleUpperCase());
+}
+
+function _Char_toLocaleLower(char)
+{
+	return _Utils_chr(char.toLocaleLowerCase());
+}
 
 
 
@@ -4320,12 +4320,17 @@ function _Browser_load(url)
 		}
 	}));
 }
-var author$project$Guess$Model = F3(
-	function (word, guess, isCorrect) {
-		return {guess: guess, isCorrect: isCorrect, word: word};
+var author$project$Guess$Model = F4(
+	function (word, guess, isCorrect, revealedWord) {
+		return {guess: guess, isCorrect: isCorrect, revealedWord: revealedWord, word: word};
 	});
 var elm$core$Basics$False = {$: 'False'};
-var author$project$Guess$initModel = A3(author$project$Guess$Model, 'Saturday', '', false);
+var author$project$Guess$initModel = A4(
+	author$project$Guess$Model,
+	'Saturday',
+	'',
+	false,
+	{pos: 2, text: ''});
 var elm$core$Basics$True = {$: 'True'};
 var elm$core$Elm$JsArray$foldr = _JsArray_foldr;
 var elm$core$Array$foldr = F3(
@@ -4412,19 +4417,44 @@ var author$project$Guess$checkIfCorrect = F2(
 	function (model, txt) {
 		return _Utils_eq(txt, model.word) ? true : false;
 	});
+var elm$core$Basics$add = _Basics_add;
+var elm$core$Maybe$Just = function (a) {
+	return {$: 'Just', a: a};
+};
+var elm$core$Maybe$Nothing = {$: 'Nothing'};
+var elm$core$String$slice = _String_slice;
+var author$project$Guess$revealAndIncrement = function (_n0) {
+	var revealedWord = _n0.revealedWord;
+	var word = _n0.word;
+	return _Utils_eq(revealedWord.text, word) ? revealedWord : _Utils_update(
+		revealedWord,
+		{
+			pos: revealedWord.pos + 1,
+			text: A3(elm$core$String$slice, 0, revealedWord.pos, word)
+		});
+};
 var author$project$Guess$update = F2(
 	function (msg, model) {
-		var txt = msg.a;
-		return _Utils_update(
-			model,
-			{
-				guess: txt,
-				isCorrect: A2(author$project$Guess$checkIfCorrect, model, txt)
-			});
+		if (msg.$ === 'Answer') {
+			var txt = msg.a;
+			return _Utils_update(
+				model,
+				{
+					guess: txt,
+					isCorrect: A2(author$project$Guess$checkIfCorrect, model, txt)
+				});
+		} else {
+			return _Utils_update(
+				model,
+				{
+					revealedWord: author$project$Guess$revealAndIncrement(model)
+				});
+		}
 	});
 var author$project$Guess$Answer = function (a) {
 	return {$: 'Answer', a: a};
 };
+var author$project$Guess$Reveal = {$: 'Reveal'};
 var elm$core$Basics$identity = function (x) {
 	return x;
 };
@@ -4526,7 +4556,6 @@ var elm$core$Array$treeFromBuilder = F2(
 			}
 		}
 	});
-var elm$core$Basics$add = _Basics_add;
 var elm$core$Basics$apL = F2(
 	function (f, x) {
 		return f(x);
@@ -4605,10 +4634,6 @@ var elm$core$Array$initialize = F2(
 			return A5(elm$core$Array$initializeHelp, fn, initialFromIndex, len, _List_Nil, tail);
 		}
 	});
-var elm$core$Maybe$Just = function (a) {
-	return {$: 'Just', a: a};
-};
-var elm$core$Maybe$Nothing = {$: 'Nothing'};
 var elm$core$Result$Err = function (a) {
 	return {$: 'Err', a: a};
 };
@@ -4839,10 +4864,12 @@ var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
 var author$project$Guess$generateResult = function (_n0) {
 	var isCorrect = _n0.isCorrect;
-	return isCorrect ? elm$html$Html$text('You got it') : elm$html$Html$text('No');
+	var revealedWord = _n0.revealedWord;
+	var word = _n0.word;
+	var txt = _Utils_eq(revealedWord.text, word) ? 'You did not guess it' : (isCorrect ? 'You got it' : 'No');
+	return elm$html$Html$text(txt);
 };
-var elm$core$Debug$toString = _Debug_toString;
-var elm$core$String$slice = _String_slice;
+var elm$html$Html$button = _VirtualDom_node('button');
 var elm$html$Html$div = _VirtualDom_node('div');
 var elm$html$Html$h2 = _VirtualDom_node('h2');
 var elm$html$Html$input = _VirtualDom_node('input');
@@ -4855,13 +4882,29 @@ var elm$html$Html$Attributes$stringProperty = F2(
 			elm$json$Json$Encode$string(string));
 	});
 var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
+var elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			elm$virtual_dom$VirtualDom$on,
+			event,
+			elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		elm$html$Html$Events$on,
+		'click',
+		elm$json$Json$Decode$succeed(msg));
+};
 var elm$html$Html$Events$alwaysStop = function (x) {
 	return _Utils_Tuple2(x, true);
 };
 var elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
 	return {$: 'MayStopPropagation', a: a};
 };
-var elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
 var elm$html$Html$Events$stopPropagationOn = F2(
 	function (event, decoder) {
 		return A2(
@@ -4955,9 +4998,7 @@ var author$project$Guess$view = function (model) {
 				_List_Nil,
 				_List_fromArray(
 					[
-						elm$html$Html$text(
-						'I am thinking of a word that starts with ' + elm$core$Debug$toString(
-							A3(elm$core$String$slice, 0, 1, model.word)))
+						elm$html$Html$text('I am thinking of a word that starts with ' + model.revealedWord.text)
 					])),
 				A2(
 				elm$html$Html$input,
@@ -4967,6 +5008,16 @@ var author$project$Guess$view = function (model) {
 						elm$html$Html$Events$onInput(author$project$Guess$Answer)
 					]),
 				_List_Nil),
+				A2(
+				elm$html$Html$button,
+				_List_fromArray(
+					[
+						elm$html$Html$Events$onClick(author$project$Guess$Reveal)
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text('Give me a hint')
+					])),
 				A2(
 				elm$html$Html$div,
 				_List_Nil,
